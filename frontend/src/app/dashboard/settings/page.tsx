@@ -2,6 +2,7 @@
 
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation'; // Importado
 import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import fetchWithAuth from '@/lib/fetchwithauth';
@@ -29,6 +30,23 @@ function SettingsCard({ title, description, children }: { title: string, descrip
 }
 
 export default function SettingsPage() {
+    const router = useRouter(); // Adicionado
+
+    // Redireciona o usuário para o dashboard principal
+    useEffect(() => {
+        router.replace('/dashboard');
+    }, [router]);
+
+    // O restante do código não será executado por causa do redirecionamento.
+    // O retorno abaixo mostra um loader enquanto o redirecionamento ocorre.
+    return (
+        <div className="flex justify-center items-center h-screen">
+            <Loader2 className="animate-spin h-8 w-8 text-indigo-600" />
+        </div>
+    );
+
+    /*
+    // Lógica original da página (agora inativa)
     const { data: session, update } = useSession();
 
     const [profile, setProfile] = useState<UserProfile>({
@@ -61,7 +79,6 @@ export default function SettingsPage() {
             } catch (error) {
                 console.error(error);
                 toast.error('Não foi possível carregar seus dados de perfil.');
-                // Garante que o nome seja preenchido mesmo em caso de erro na API
                 const userName = session?.user?.name;
                 if (userName) {
                     setProfile(prev => ({ ...prev, nome: userName }));
@@ -107,72 +124,8 @@ export default function SettingsPage() {
 
     return (
         <div className="space-y-6 max-w-4xl mx-auto">
-            <div>
-                <h1 className="text-3xl font-bold text-gray-800">Configurações</h1>
-                <p className="text-gray-500 mt-1">Gerencie seu perfil e as preferências da aplicação.</p>
-            </div>
-
-            <form onSubmit={handleSaveProfile}>
-                <SettingsCard
-                    title="Perfil do Usuário"
-                    description="Edite suas informações pessoais e de contato."
-                >
-                    <div className="space-y-4">
-                         <div className="flex items-center space-x-4">
-                            {session?.user?.image && (
-                                <Image src={session.user.image} alt="Avatar" width={48} height={48} className="w-12 h-12 rounded-full" />
-                            )}
-                            <div>
-                                <p className="font-semibold text-gray-800">{profile.nome || 'Usuário'}</p>
-                                <p className="text-sm text-gray-500">{session?.user?.email || 'Nenhum e-mail'}</p>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label htmlFor="nome" className="block text-sm font-medium text-gray-700">Nome</label>
-                                <input type="text" name="nome" id="nome" value={profile.nome} onChange={handleInputChange} className="mt-1 w-full p-2 border rounded-md text-gray-900 bg-white" />
-                            </div>
-                             <div>
-                                <label htmlFor="telefone" className="block text-sm font-medium text-gray-700">Telefone</label>
-                                <input type="tel" name="telefone" id="telefone" value={profile.telefone || ''} onChange={handleInputChange} className="mt-1 w-full p-2 border rounded-md text-gray-900 bg-white" />
-                            </div>
-                             <div>
-                                <label htmlFor="cargo" className="block text-sm font-medium text-gray-700">Cargo</label>
-                                <input type="text" name="cargo" id="cargo" value={profile.cargo || ''} onChange={handleInputChange} className="mt-1 w-full p-2 border rounded-md text-gray-900 bg-white" />
-                            </div>
-                        </div>
-                        <div className="flex justify-end pt-4">
-                             <button type="submit" disabled={isLoading} className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700 disabled:bg-indigo-400 flex items-center">
-                                {isLoading && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
-                                Salvar Perfil
-                            </button>
-                        </div>
-                    </div>
-                </SettingsCard>
-            </form>
-
-            <SettingsCard
-                title="Preferências da IA"
-                description="Ajuste como você interage com o assistente de IA."
-            >
-                 <div className="space-y-2">
-                    <label htmlFor="idioma_ia" className="block text-sm font-medium text-gray-700">Idioma de Resposta</label>
-                    <select
-                        id="idioma_ia"
-                        name="idioma_ia"
-                        value={profile.idioma_ia}
-                        onChange={handleInputChange}
-                        className="mt-1 w-full md:w-1/2 p-2 border rounded-md text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    >
-                        <option value="portugues">Português</option>
-                        <option value="ingles">Inglês</option>
-                    </select>
-                    <p className="text-xs text-gray-500 pt-1">
-                        Para salvar a preferência de idioma, clique em "Salvar Perfil" na seção acima.
-                    </p>
-                </div>
-            </SettingsCard>
+            ...
         </div>
     );
+    */
 }

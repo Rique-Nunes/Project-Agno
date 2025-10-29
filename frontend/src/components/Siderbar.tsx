@@ -30,7 +30,7 @@ const mainNavItems: NavItem[] = [
   { href: "/dashboard/reports", icon: FileText, label: "Gerar Relatórios", minRole: "viewer" },
   { href: "/dashboard/companies", icon: Building, label: "Gerenciar Empresas", minRole: "admin" },
   { href: "/dashboard/manage-users", icon: Users, label: "Gerenciar Usuários", minRole: "super_admin" },
-  { href: "/dashboard/settings", icon: Settings, label: "Configurações", minRole: "viewer" },
+  //{ href: "/dashboard/settings", icon: Settings, label: "Configurações", minRole: "viewer" },
 ];
 
 const bottomNavItems = [
