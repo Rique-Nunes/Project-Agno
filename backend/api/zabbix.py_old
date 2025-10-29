@@ -1,0 +1,24 @@
+from fastapi import APIRouter, Depends
+from typing import List, Dict, Any
+
+from services.zabbix_service import ZabbixService, zabbix_service
+
+router = APIRouter(
+    prefix="/api/v1/zabbix",
+    tags=["Zabbix"],
+    responses={404: {"description": "Not found"}},
+)
+
+# Usamos Depends para injetar nossa instância única do serviço
+def get_zabbix_service():
+    return zabbix_service
+
+@router.get("/hosts")
+def list_hosts(service: ZabbixService = Depends(get_zabbix_service)):
+    """Lista os hosts monitorados pelo Zabbix."""
+    return service.get_hosts(limit=25)
+
+@router.get("/triggers")
+def list_active_triggers(service: ZabbixService = Depends(get_zabbix_service)):
+    """Lista os triggers ativos (problemas) no Zabbix."""
+    return service.get_active_triggers(limit=25)

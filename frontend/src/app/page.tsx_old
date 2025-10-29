@@ -1,0 +1,66 @@
+import { AppSidebar } from '@/components/app-sidebar';
+import { Header } from '@/components/header';
+import { AlertsTable } from '@/components/dashboard/alerts-table';
+import { AiQueryPanel } from '@/components/dashboard/ai-query-panel';
+import { ChartsTabs } from '@/components/dashboard/charts-tabs';
+import { MetricCard } from '@/components/dashboard/metric-card';
+import { initialMetrics } from '@/lib/data';
+import { Cpu, HardDrive, MemoryStick, Network } from 'lucide-react';
+
+export default function DashboardPage() {
+  return (
+    <div className="flex min-h-screen w-full bg-background">
+      <AppSidebar />
+      <div className="flex flex-1 flex-col">
+        <Header />
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <MetricCard
+              title="CPU Utilization"
+              value={initialMetrics.cpu}
+              unit="%"
+              icon={Cpu}
+              change="+5.2%"
+              changeType="increase"
+            />
+            <MetricCard
+              title="Memory Usage"
+              value={initialMetrics.memory}
+              unit="%"
+              icon={MemoryStick}
+              change="-1.8%"
+              changeType="decrease"
+            />
+            <MetricCard
+              title="Disk Space"
+              value={initialMetrics.disk}
+              unit="%"
+              icon={HardDrive}
+              change="+0.5%"
+              changeType="increase"
+            />
+            <MetricCard
+              title="Network I/O"
+              value={initialMetrics.network}
+              unit="Mbps"
+              icon={Network}
+              change="+12.1%"
+              changeType="increase"
+            />
+          </div>
+          <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
+            <div className="lg:col-span-2">
+              <ChartsTabs />
+            </div>
+            <div className="flex items-start lg:col-span-1">
+              <AlertsTable />
+            </div>
+          </div>
+        </main>
+      </div>
+      <aside className="hidden w-[350px] flex-col border-l bg-card/50 backdrop-blur-sm lg:flex xl:w-[400px]">
+        <AiQueryPanel />
+      </aside>
+    </div>
+  );
+}

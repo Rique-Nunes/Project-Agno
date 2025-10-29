@@ -1,0 +1,89 @@
+import requests
+from typing import Optional, List, Dict, Any
+from rich import print
+
+from utils.settings import settings
+
+class ZabbixService:
+    def __init__(self):
+        self.api_url = settings.ZABBIX_API_URL
+        self._auth_token: Optional[str] = None
+        self._request_id = 1
+        # Tenta fazer login assim que a instância é criada
+        self.login()
+
+    def _api_request(self, method: str, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Estrutura base para fazer uma requisição à API JSON-RPC do Zabbix."""
+        payload = {
+            "jsonrpc": "2.0",
+            "method": method,
+            "params": params,
+            "id": self._request_id,
+            "auth": self._auth_token,
+        }
+        
+        try:
+            response = requests.post(self.api_url, json=payload, headers={"Content-Type": "application/json-rpc"})
+            response.raise_for_status()  # Lança exceção para status HTTP 4xx/5xx
+            
+            self._request_id += 1
+            result = response.json()
+
+            if "error" in result:
+                print(f"[bold red]Erro na API Zabbix:[/bold red] {result['error']}")
+                return {"error": result["error"]}
+            
+            return result.get("result", {})
+
+        except requests.exceptions.RequestException as e:
+            print(f"[bold red]Erro de conexão com a API Zabbix:[/bold red] {e}")
+            return {"error": {"message": "Connection error", "data": str(e)}}
+
+    def login(self):
+        """Autentica na API do Zabbix e armazena o token."""
+        print("[cyan]Tentando autenticar na API do Zabbix...[/cyan]")
+        payload = {
+            "jsonrpc": "2.0",
+            "method": "user.login",
+            "params": {
+                "username": settings.ZABBIX_API_USER,  # <-- ESTA É A LINHA CORRIGIDA
+                "password": settings.ZABBIX_API_PASSWORD,
+            },
+            "id": self._request_id,
+        }
+        try:
+            response = requests.post(self.api_url, json=payload, headers={"Content-Type": "application/json-rpc"})
+            response.raise_for_status()
+            result = response.json()
+            
+            if "result" in result:
+                self._auth_token = result["result"]
+                self._request_id += 1
+                print("[bold green]Autenticação com Zabbix bem-sucedida![/bold green]")
+            else:
+                print(f"[bold red]Falha na autenticação com Zabbix:[/bold red] {result.get('error')}")
+        except requests.exceptions.RequestException as e:
+            print(f"[bold red]Erro de conexão ao tentar autenticar no Zabbix:[/bold red] {e}")
+
+    def get_hosts(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """Busca uma lista de hosts no Zabbix."""
+        if not self._auth_token: return {"error": "Not authenticated"}
+        params = {"output": ["hostid", "host", "name", "status"], "limit": limit}
+        return self._api_request("host.get", params)
+
+    def get_active_triggers(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """Busca triggers ativos (em estado de problema)."""
+        if not self._auth_token: return {"error": "Not authenticated"}
+        params = {
+            "output": ["triggerid", "description", "priority", "lastchange"],
+            "selectHosts": ["host"],
+            "filter": {"value": 1},  # 1 = Problema
+            "sortfield": "lastchange",
+            "sortorder": "DESC",
+            "limit": limit,
+            "expandDescription": True,
+        }
+        return self._api_request("trigger.get", params)
+
+# Instância única para ser usada na aplicação
+zabbix_service = ZabbixService()

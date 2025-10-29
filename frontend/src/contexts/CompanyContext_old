@@ -1,0 +1,74 @@
+'use client';
+
+import { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+import fetchWithAuth from '@/lib/fetchwithauth';
+
+interface Company {
+    id: number;
+    nome: string;
+}
+
+interface CompanyContextType {
+    companies: Company[];
+    selectedCompanyId: string | null;
+    setSelectedCompanyId: (id: string | null) => void;
+    isLoading: boolean;
+    error: string | null;
+    fetchCompanies: () => void;
+}
+
+const CompanyContext = createContext<CompanyContextType | undefined>(undefined);
+
+export function CompanyProvider({ children }: { children: ReactNode }) {
+    const [companies, setCompanies] = useState<Company[]>([]);
+    const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const fetchCompanies = async () => {
+        try {
+            setError(null);
+            setIsLoading(true);
+            const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/empresas`);
+            if (!response.ok) throw new Error('Falha ao carregar as empresas.');
+            const data: Company[] = await response.json();
+            setCompanies(data);
+            // Se não houver empresa selecionada e houver empresas, seleciona a primeira
+            if (!selectedCompanyId && data.length > 0) {
+                 setSelectedCompanyId(data[0].id.toString());
+            }
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchCompanies();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const value = {
+        companies,
+        selectedCompanyId,
+        setSelectedCompanyId,
+        isLoading,
+        error,
+        fetchCompanies,
+    };
+
+    return (
+        <CompanyContext.Provider value={value}>
+            {children}
+        </CompanyContext.Provider>
+    );
+}
+
+export function useCompany() {
+    const context = useContext(CompanyContext);
+    if (context === undefined) {
+        throw new Error('useCompany must be used within a CompanyProvider');
+    }
+    return context;
+}

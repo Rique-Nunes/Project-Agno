@@ -1,0 +1,215 @@
+'use client';
+import { aiPoweredQuery } from '@/ai/flows/ai-powered-querying';
+import { Bot, Send, Sparkles, User } from 'lucide-react';
+import React, { FormEvent, useRef, useState, useTransition } from 'react';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
+import { Skeleton } from '../ui/skeleton';
+import { Bar, BarChart, ResponsiveContainer } from "recharts"
+import {
+  ChartContainer,
+} from "@/components/ui/chart"
+import { PlaceHolderImages } from '@/lib/placeholder-images';
+
+type Message = {
+  id: string;
+  from: 'user' | 'ai';
+  text: string;
+  chartData?: any;
+  status?: string;
+  isStreaming?: boolean;
+};
+
+const exampleQueries = [
+    "How is client Apex Industries doing?",
+    "Show me CPU usage for srv-web-03.",
+    "Are there any critical database alerts?",
+    "What's the memory status of srv-cache-01?",
+]
+
+export function AiQueryPanel() {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isPending, startTransition] = useTransition();
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const userAvatar = PlaceHolderImages.find(img => img.id === 'user-avatar');
+
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    const input = inputRef.current;
+    if (!input?.value) return;
+
+    const userMessage: Message = {
+      id: crypto.randomUUID(),
+      from: 'user',
+      text: input.value,
+    };
+    
+    const aiMessagePlaceholder: Message = {
+      id: crypto.randomUUID(),
+      from: 'ai',
+      text: 'Thinking...',
+      isStreaming: true,
+    };
+
+    setMessages((prev) => [...prev, userMessage, aiMessagePlaceholder]);
+
+    startTransition(async () => {
+      try {
+        const result = await aiPoweredQuery({ question: input.value, clientId: "client-a" });
+        
+        // This is a mock response as the genkit flow is not fully implemented
+        const mockResult = {
+            text: `The server srv-web-03 is currently at 68% CPU utilization and 72% memory usage. The status is normal.`,
+            chartData: Math.random() > 0.5 ? {
+                "CPU": Math.floor(Math.random() * 100),
+                "Memory": Math.floor(Math.random() * 100)
+            } : null,
+            status: "Normal"
+        }
+
+        const finalAiMessage: Message = {
+          ...aiMessagePlaceholder,
+          ...mockResult,
+          isStreaming: false,
+        };
+
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === aiMessagePlaceholder.id ? finalAiMessage : msg
+          )
+        );
+      } catch (error) {
+        const errorAiMessage: Message = {
+          ...aiMessagePlaceholder,
+          text: 'Sorry, I encountered an error. Please try again.',
+          isStreaming: false,
+        };
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === aiMessagePlaceholder.id ? errorAiMessage : msg
+          )
+        );
+      }
+    });
+
+    input.value = '';
+    input.focus();
+  };
+
+  const handleExampleQuery = (query: string) => {
+    if (inputRef.current) {
+        inputRef.current.value = query;
+        inputRef.current.focus();
+    }
+  }
+
+  return (
+    <div className="flex h-full flex-col">
+      <div className="flex items-center gap-2 border-b p-4">
+        <Sparkles className="h-6 w-6 text-primary" />
+        <h2 className="text-lg font-semibold">AI Assistant</h2>
+      </div>
+
+      <ScrollArea className="flex-1 p-4">
+        <div className="space-y-6">
+          {messages.length === 0 && (
+            <div className='text-center p-4 rounded-lg bg-card border'>
+                <Bot className='mx-auto h-8 w-8 text-muted-foreground mb-2'/>
+                <p className='text-sm font-medium'>Welcome to ZabbixAI Assistant</p>
+                <p className='text-xs text-muted-foreground mb-4'>Ask me anything about your monitored hosts.</p>
+                <div className='space-y-2'>
+                    {exampleQueries.map((q) => (
+                        <Button key={q} variant="outline" size="sm" className='w-full text-left justify-start' onClick={() => handleExampleQuery(q)}>
+                           {q}
+                        </Button>
+                    ))}
+                </div>
+            </div>
+          )}
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={cn(
+                'flex items-start gap-3',
+                message.from === 'user' ? 'justify-end' : 'justify-start'
+              )}
+            >
+              {message.from === 'ai' && (
+                <Avatar className="h-8 w-8 border">
+                  <AvatarFallback><Bot className='h-5 w-5'/></AvatarFallback>
+                </Avatar>
+              )}
+              <div
+                className={cn(
+                  'max-w-[80%] rounded-lg p-3 text-sm',
+                  message.from === 'user'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted'
+                )}
+              >
+                {message.isStreaming ? (
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-4 w-4 rounded-full" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                ) : (
+                    <>
+                        <p className="font-code">{message.text}</p>
+                        {message.chartData && (
+                             <div className="mt-2 h-[120px] w-[250px]">
+                                <ChartContainer config={{}} className="h-full w-full">
+                                    <ResponsiveContainer>
+                                        <BarChart data={Object.entries(message.chartData).map(([name, value]) => ({ name, value }))}>
+                                            <Bar dataKey="value" fill="hsl(var(--primary))" radius={4} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </ChartContainer>
+                            </div>
+                        )}
+                        {message.status && <p className='text-xs mt-2 text-muted-foreground'>Status: {message.status}</p>}
+                    </>
+                )}
+              </div>
+              {message.from === 'user' && (
+                <Avatar className="h-8 w-8 border">
+                    {userAvatar && <AvatarImage src={userAvatar.imageUrl} alt="User avatar" data-ai-hint={userAvatar.imageHint} />}
+                    <AvatarFallback>
+                        <User className='h-5 w-5'/>
+                    </AvatarFallback>
+                </Avatar>
+              )}
+            </div>
+          ))}
+        </div>
+      </ScrollArea>
+      <div className="border-t p-4">
+        <form onSubmit={handleSubmit} className="relative">
+          <Textarea
+            ref={inputRef}
+            placeholder="e.g., How is srv-db-01 doing?"
+            className="pr-16"
+            rows={1}
+            onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit(e);
+                }
+            }}
+          />
+          <Button
+            type="submit"
+            size="icon"
+            className="absolute bottom-2 right-2"
+            disabled={isPending}
+          >
+            <Send className="h-4 w-4" />
+          </Button>
+        </form>
+      </div>
+    </div>
+  );
+}

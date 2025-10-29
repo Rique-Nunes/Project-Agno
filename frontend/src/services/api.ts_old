@@ -1,0 +1,26 @@
+// Define a URL base da nossa API backend
+// Usamos o IP público do servidor GCP e a porta 8000
+const API_BASE_URL = 'http://34.172.18.44:8000/api/v1';
+
+// Função para buscar os triggers (alertas) ativos
+export const fetchActiveTriggers = async () => {
+  try {
+    // Faz a chamada para o endpoint /zabbix/triggers
+    const response = await fetch(`${API_BASE_URL}/zabbix/triggers`);
+    
+    // Se a resposta não for OK (ex: erro 500), lança um erro
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    // Converte a resposta para JSON e a retorna
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    // Se houver qualquer erro na chamada, imprime no console e retorna um array vazio
+    console.error("Failed to fetch active triggers:", error);
+    return [];
+  }
+};
+
+// No futuro, podemos adicionar outras funções aqui, como fetchHosts, etc.

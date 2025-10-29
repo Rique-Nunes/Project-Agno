@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+requests
+python-dotenv
+pydantic
+rich
+pydantic-settings
+fastapi-cors<2.0.0
+google-generativeai
+SQLAlchemy
+cryptography
+python-jose[cryptography]
+passlib[bcrypt]reportlab

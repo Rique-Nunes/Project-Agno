@@ -1,0 +1,71 @@
+{
+    "name": "Zabbix Copilot",
+    "description": "Plataforma de análise inteligente integrada ao Zabbix, com IA Gemini Pro, autenticação Google e segurança avançada.",
+    "context": [
+      "Este projeto é o Zabbix Copilot — uma aplicação que integra-se diretamente com o Zabbix via API Token (Bearer), sem uso de usuário e senha.",
+      "O objetivo é fornecer um painel analítico e interativo com recomendações de IA (Gemini Pro), gráficos em tempo real e alertas críticos, sem executar ações automáticas.",
+      "O sistema será executado localmente (sem Docker inicialmente), com possibilidade de containerização futura.",
+      "A arquitetura é dividida em dois módulos: frontend (Next.js + TypeScript + TailwindCSS) e backend (FastAPI Python 3.11+).",
+      "A autenticação de usuários será feita via Google OAuth (NextAuth), e o backend se comunicará com o frontend via HTTPS e JWT.",
+      "Cada empresa terá sua própria conta de Zabbix, identificada pelo nome, URL da API e Token, que serão armazenados localmente com criptografia AES/Fernet.",
+      "As conexões com o Zabbix devem ser feitas diretamente à API real, sem mocks, retornando métricas e alertas em tempo real.",
+      "Os dados coletados devem alimentar quatro gráficos principais (CPU, Memória, Disco, Rede) e um painel de alertas críticos e insights da IA.",
+      "O Gemini Pro será usado apenas para gerar relatórios, análises e recomendações baseadas em dados reais — nunca para aplicar ações corretivas automáticas.",
+      "A segurança é prioridade máxima: tokens e dados sensíveis jamais devem aparecer no frontend ou em logs. Utilizar HTTPS, CSRF protection, XSS sanitization e rotação segura de JWT."
+    ],
+    "objectives": [
+      "1. Analisar toda a estrutura atual do projeto antes de gerar qualquer código novo.",
+      "2. Criar e validar a comunicação entre frontend e backend (CORS restrito, HTTPS, JWT).",
+      "3. Implementar autenticação via Google OAuth com NextAuth e controle de sessão seguro.",
+      "4. Criar tela de seleção e cadastro de empresas, salvando URL e Token Zabbix criptografado.",
+      "5. Conectar ao Zabbix real via API Token Bearer (sem login/senha) e retornar dados reais.",
+      "6. Exibir dados em um painel interativo com 4 gráficos: CPU, Memória, Disco e Rede, além de alertas relevantes.",
+      "7. Incluir um campo de seleção de empresa e de ativos para visualização detalhada das métricas.",
+      "8. Integrar o Gemini Pro no backend para gerar relatórios e recomendações com base nos dados coletados.",
+      "9. Garantir segurança avançada: criptografia AES/Fernet, HTTPS, JWT curto, sanitização e logs seguros.",
+      "10. Evitar criação de banco paralelo — buscar dados diretamente no banco do Zabbix quando aplicável, para garantir atualizações em tempo real.",
+      "11. O painel deve atuar como um centro de informações e análises, sem executar ações automáticas.",
+      "12. Interface limpa e responsiva, priorizando interação com a IA e apresentação dos dados mais relevantes."
+    ],
+    "security": {
+      "guidelines": [
+        "Nunca expor tokens ou dados sensíveis no frontend ou logs.",
+        "Criptografar dados com AES/Fernet no backend.",
+        "Habilitar HTTPS local com certificado self-signed.",
+        "Aplicar CORS restrito apenas ao domínio do frontend.",
+        "Proteger contra XSS, CSRF e injeção de código.",
+        "Usar JWT com expiração curta e rotação segura.",
+        "Validar todos os inputs do usuário antes de enviar ao backend."
+      ]
+    },
+    "tech_stack": {
+      "frontend": {
+        "framework": "Next.js",
+        "language": "TypeScript",
+        "ui": "TailwindCSS"
+      },
+      "backend": {
+        "framework": "FastAPI",
+        "language": "Python 3.11+",
+        "security": ["AES/Fernet", "JWT", "HTTPS", "CORS Restrito"]
+      },
+      "ia": {
+        "model": "Gemini Pro",
+        "usage": "Análises, relatórios e recomendações baseadas em métricas do Zabbix"
+      },
+      "database": {
+        "type": "SQLite ou PostgreSQL leve",
+        "usage": "Armazenamento de empresas e tokens criptografados"
+      },
+      "integration": {
+        "zabbix_api": "Autenticação via Token Bearer",
+        "oauth": "Google OAuth via NextAuth"
+      }
+    },
+    "constraints": {
+      "mock_data": "Proibido — deve usar dados reais do Zabbix API",
+      "actions": "Proibido executar correções automáticas — apenas recomendar",
+      "code_quality": "Alta — código modular, comentado e escalável"
+    }
+  }
+  
