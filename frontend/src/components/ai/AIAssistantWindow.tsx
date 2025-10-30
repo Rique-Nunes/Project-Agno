@@ -1,50 +1,43 @@
-'use client';
+"use client";
 
-import { useAI } from '@/contexts/AIContext';
-import { useDashboard } from '@/contexts/DashboardContext';
-import fetchWithAuth from '@/lib/fetchwithauth';
-import { X, Send, Bot, User, Trash2, Loader2 } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
-import { usePathname } from 'next/navigation';
+import { useAI } from "@/contexts/AIContext";
+import fetchWithAuth from "@/lib/fetchwithauth";
+import { useEffect, useRef, useState } from "react";
+import { Bot, Loader, Send, User, X } from 'lucide-react';
+
+// Supondo que a interface Message esteja definida no contexto AIContext
+// Se não, ela precisaria ser definida aqui. Ex:
+// type Message = { role: 'user' | 'bot'; content: string; };
 
 export default function AIAssistantWindow() {
-    const { isVisible, close, conversation, setConversation, clearConversation } = useAI();
-    const { selectedCompanyId } = useDashboard(); 
-    
+    const { isVisible, close, conversation, setConversation } = useAI();
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
-
-    // Sugestões de perguntas padrão
-    const suggestions = [
-        "Qual o status geral do ambiente?",
-        "Existem alertas críticos?",
-        "Resuma a saúde dos servidores."
-    ];
+    const conversationEndRef = useRef<HTMLDivElement>(null);
 
     const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        conversationEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    useEffect(scrollToBottom, [conversation, isLoading]);
+    useEffect(scrollToBottom, [conversation]);
 
-    const handleSendMessage = async (e?: React.FormEvent, question?: string) => {
+    const handleSendMessage = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
-        const userMessage = question || input;
-        if (!userMessage.trim() || !selectedCompanyId) return;
 
-        const newConversation = [...conversation, { role: 'user', content: userMessage }];
+        const userMessage = input.trim();
+        if (!userMessage) return;
+
+        const newConversation = [...conversation, { role: 'user' as const, content: userMessage }];
         setConversation(newConversation);
         setInput('');
         setIsLoading(true);
 
         try {
-            const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/chat/`, {
+            // Supondo que este componente não precise do `empresa_id` ou que ele seja obtido de outra forma
+            const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/chat`, {
                 method: 'POST',
                 body: JSON.stringify({
                     question: userMessage,
-                    empresa_id: parseInt(selectedCompanyId),
                 }),
             });
 
@@ -54,9 +47,9 @@ export default function AIAssistantWindow() {
             }
 
             const data = await response.json();
-            setConversation([...newConversation, { role: 'bot', content: data.response }]);
+            setConversation([...newConversation, { role: 'bot' as const, content: data.response }]);
         } catch (error: any) {
-            setConversation([...newConversation, { role: 'bot', content: `Desculpe, ocorreu um erro: ${error.message}` }]);
+            setConversation([...newConversation, { role: 'bot' as const, content: `Desculpe, ocorreu um erro: ${error.message}` }]);
         } finally {
             setIsLoading(false);
         }
@@ -65,78 +58,66 @@ export default function AIAssistantWindow() {
     if (!isVisible) return null;
 
     return (
-        <div className="fixed bottom-24 right-8 w-96 h-[600px] bg-white rounded-xl shadow-2xl flex flex-col z-50">
-            <div className="flex justify-between items-center p-4 border-b">
-                <div className='flex items-center space-x-2'>
-                    <Bot className="text-indigo-600" />
-                    <h2 className="font-bold text-lg text-gray-800">InfraSense AI</h2>
-                </div>
-                <div className='flex items-center space-x-2'>
-                    <button onClick={clearConversation} className="text-gray-500 hover:text-gray-800" title="Nova conversa">
-                        <Trash2 size={20} />
-                    </button>
-                    <button onClick={close} className="text-gray-500 hover:text-gray-800" title="Fechar">
-                        <X size={24} />
-                    </button>
-                </div>
-            </div>
+        <div className="fixed bottom-4 right-4 w-96 h-[600px] bg-gray-800 border border-gray-700 rounded-lg shadow-xl flex flex-col z-50">
+            <header className="flex items-center justify-between p-4 border-b border-gray-700">
+                <h2 className="text-lg font-semibold text-white">Assistente IA</h2>
+                <button onClick={close} className="text-gray-400 hover:text-white">
+                    <X size={20} />
+                </button>
+            </header>
 
-            <div className="flex-1 p-4 overflow-y-auto bg-gray-50">
-                <div className="space-y-4">
-                    {/* LÓGICA PARA MOSTRAR SUGESTÕES */}
-                    {conversation.length === 0 && !isLoading ? (
-                        <div className='text-center text-gray-600 pt-8'>
-                            <h3 className='font-semibold mb-4 text-lg'>Como posso ajudar?</h3>
-                            <div className='space-y-2'>
-                                {suggestions.map((s, i) => (
-                                    <button
-                                        key={i}
-                                        onClick={() => handleSendMessage(undefined, s)}
-                                        className='w-full text-left p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-100 text-sm text-gray-800 transition-colors'
-                                    >
-                                        {s}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    ) : (
-                        conversation.map((msg, index) => (
-                            <div key={index} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
-                                {msg.role === 'bot' && <Bot className="text-indigo-600 flex-shrink-0 mt-1" />}
-                                <div className={`px-4 py-2 rounded-lg max-w-[85%] break-words prose prose-sm ${msg.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-800'}`}>
-                                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+            <div className="flex-1 p-4 overflow-y-auto">
+                <div className="flex flex-col space-y-4">
+                    {conversation.map((msg, index) => (
+                        <div key={index} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
+                            {msg.role === 'bot' && (
+                                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+                                    <Bot size={20} className="text-white" />
                                 </div>
-                                {msg.role === 'user' && <User className="text-gray-600 flex-shrink-0 mt-1" />}
+                            )}
+                            <div className={`px-4 py-2 rounded-lg max-w-xs ${msg.role === 'user' ? 'bg-gray-700 text-white self-end' : 'bg-gray-700 text-gray-300'}`}>
+                                <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                             </div>
-                        ))
-                    )}
-                     {isLoading && (
+                            {msg.role === 'user' && (
+                                <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center flex-shrink-0">
+                                    <User size={20} className="text-white" />
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                    {isLoading && (
                         <div className="flex items-start gap-3">
-                            <Bot className="text-indigo-600" />
-                            <div className="px-4 py-2 rounded-lg bg-gray-200">
-                                <Loader2 className="animate-spin text-indigo-500" />
+                            <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+                                <Bot size={20} className="text-white" />
+                            </div>
+                            <div className="px-4 py-2 rounded-lg max-w-xs bg-gray-700 text-gray-300 flex items-center">
+                                <Loader size={20} className="animate-spin text-white" />
                             </div>
                         </div>
                     )}
-                    <div ref={messagesEndRef} />
+                    <div ref={conversationEndRef} />
                 </div>
             </div>
 
-            <div className="p-4 border-t bg-white">
+            <footer className="p-4 border-t border-gray-700">
                 <form onSubmit={handleSendMessage} className="flex items-center gap-2">
                     <input
                         type="text"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        placeholder="Pergunte algo sobre o ambiente..."
-                        className="flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 text-gray-900"
-                        disabled={!selectedCompanyId || isLoading}
+                        placeholder="Pergunte algo..."
+                        disabled={isLoading}
+                        className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white disabled:opacity-50"
                     />
-                    <button type="submit" className="bg-indigo-600 text-white p-2 rounded-lg hover:bg-indigo-700 disabled:bg-indigo-400" disabled={!selectedCompanyId || isLoading}>
-                        <Send />
+                    <button
+                        type="submit"
+                        disabled={isLoading || !input.trim()}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                    >
+                        {isLoading ? <Loader size={20} className="animate-spin" /> : <Send size={20} />}
                     </button>
                 </form>
-            </div>
+            </footer>
         </div>
     );
 }

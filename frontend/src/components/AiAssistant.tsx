@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import AiAssistantIcon from './AiAssistantIcon';
 import fetchWithAuth from '@/lib/fetchwithauth';
-import ReactMarkdown from 'react-markdown'; // 1. Importar a biblioteca
+import ReactMarkdown from 'react-markdown';
 
 interface AiAssistantProps {
     empresaId: number | undefined;
@@ -62,7 +62,6 @@ export default function AiAssistant({ empresaId, hostId }: AiAssistantProps) {
         }
     };
     
-    // 2. Função para limpar o chat
     const handleClearChat = () => {
         setMessages([]);
     };
@@ -87,7 +86,6 @@ export default function AiAssistant({ empresaId, hostId }: AiAssistantProps) {
                     <h2 className="text-lg font-bold">AI Assistant</h2>
                 </div>
                 <div>
-                    {/* 3. Botão de Limpar adicionado */}
                     <button onClick={handleClearChat} className="text-gray-400 hover:text-white text-sm mr-3 px-2 py-1 rounded hover:bg-gray-700">
                         Limpar
                     </button>
@@ -108,10 +106,13 @@ export default function AiAssistant({ empresaId, hostId }: AiAssistantProps) {
                 ) : (
                     messages.map((msg, index) => (
                         <div key={index} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                            {/* 4. Lógica de renderização atualizada */}
                             <div className={`max-w-[85%] p-3 rounded-lg ${msg.type === 'user' ? 'bg-cyan-600' : 'bg-gray-700'}`}>
                                 {msg.type === 'ai' ? (
-                                    <ReactMarkdown className="prose prose-invert prose-sm max-w-none">
+                                    <ReactMarkdown
+                                        components={{
+                                            p: ({ node, ...props }) => <p className="prose prose-invert prose-sm max-w-none" {...props} />
+                                        }}
+                                    >
                                         {msg.text}
                                     </ReactMarkdown>
                                 ) : (

@@ -45,7 +45,7 @@ export default function AIAssistantWindow() {
         let userMessage = question || input;
         if (!userMessage.trim() || !selectedCompanyId) return;
 
-        const newConversation = [...conversation, { role: 'user', content: userMessage }];
+        const newConversation = [...conversation, { role: 'user' as const, content: userMessage }];
         setConversation(newConversation);
         setInput('');
         setIsLoading(true);

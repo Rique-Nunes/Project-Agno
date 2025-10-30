@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { AlertTriangle, CheckCircle, Info, ShieldAlert, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import fetchWithAuth from '@/lib/fetchwithauth'; // Adicionado para fazer a chamada autenticada
 
 interface Trigger {
     triggerid: string;
@@ -21,7 +22,7 @@ interface GroupedTriggers {
 
 interface HostAlertsProps {
     hostId: string;
-    empresaId: string;
+    empresaId: string | null; // Alterado para aceitar null
 }
 
 const Section = ({ title, triggers, icon, color, isOpen, onToggle }: { title: string; triggers: Trigger[]; icon: JSX.Element; color: string; isOpen: boolean; onToggle: () => void; }) => {
@@ -71,11 +72,8 @@ export default function HostAlerts({ hostId, empresaId }: HostAlertsProps) {
         setError(null);
 
         try {
-            const response = await fetch(`/zabbix/triggers/host/${empresaId}/${hostId}`, {
-                headers: {
-                    'Authorization': `Bearer ${session.accessToken}`,
-                },
-            });
+            // CORREÇÃO: Usando fetchWithAuth e a variável de ambiente correta
+            const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/zabbix/triggers/host/${empresaId}/${hostId}`);
 
             if (!response.ok) {
                 const errorData = await response.json();
@@ -140,41 +138,45 @@ export default function HostAlerts({ hostId, empresaId }: HostAlertsProps) {
                 </div>
             )}
 
-            <Section
-                title="Críticos"
-                triggers={triggers.critical}
-                icon={<ShieldAlert className="text-red-600" />}
-                color="red"
-                isOpen={openSections.critical}
-                onToggle={() => handleToggle('critical')}
-            />
+            {triggers && (
+              <>
+                <Section
+                    title="Críticos"
+                    triggers={triggers.critical}
+                    icon={<ShieldAlert className="text-red-600" />}
+                    color="red"
+                    isOpen={openSections.critical}
+                    onToggle={() => handleToggle('critical')}
+                />
 
-            <Section
-                title="Avisos"
-                triggers={triggers.warning}
-                icon={<AlertTriangle className="text-yellow-600" />}
-                color="yellow"
-                isOpen={openSections.warning}
-                onToggle={() => handleToggle('warning')}
-            />
+                <Section
+                    title="Avisos"
+                    triggers={triggers.warning}
+                    icon={<AlertTriangle className="text-yellow-600" />}
+                    color="yellow"
+                    isOpen={openSections.warning}
+                    onToggle={() => handleToggle('warning')}
+                />
 
-            <Section
-                title="Informativos"
-                triggers={triggers.info}
-                icon={<Info className="text-blue-600" />}
-                color="blue"
-                isOpen={openSections.info}
-                onToggle={() => handleToggle('info')}
-            />
+                <Section
+                    title="Informativos"
+                    triggers={triggers.info}
+                    icon={<Info className="text-blue-600" />}
+                    color="blue"
+                    isOpen={openSections.info}
+                    onToggle={() => handleToggle('info')}
+                />
 
-            <Section
-                title="OK"
-                triggers={triggers.ok}
-                icon={<CheckCircle className="text-green-600" />}
-                color="green"
-                isOpen={openSections.ok}
-                onToggle={() => handleToggle('ok')}
-            />
+                <Section
+                    title="OK"
+                    triggers={triggers.ok}
+                    icon={<CheckCircle className="text-green-600" />}
+                    color="green"
+                    isOpen={openSections.ok}
+                    onToggle={() => handleToggle('ok')}
+                />
+              </>
+            )}
         </div>
     );
 }

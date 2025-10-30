@@ -4,6 +4,7 @@ import { useState, useEffect, FormEvent } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import fetchWithAuth from '@/lib/fetchwithauth';
+import { toast } from 'sonner'; // Adicionado para feedback
 
 // --- Interfaces ---
 interface Empresa {
@@ -37,7 +38,8 @@ export default function EmpresasPage() {
     setError(null);
     setLoading(true);
     try {
-      const response = await fetchWithAuth('http://localhost:8000/empresas');
+      // CORREÇÃO: Usando variável de ambiente
+      const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/empresas`);
       if (!response.ok) {
         if (response.status === 401) throw new Error('Não autorizado. Por favor, faça login novamente.');
         throw new Error('Falha ao buscar dados das empresas.');
@@ -46,6 +48,7 @@ export default function EmpresasPage() {
       setEmpresas(data);
     } catch (err: any) {
       setError(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -59,40 +62,41 @@ export default function EmpresasPage() {
       return;
     }
     try {
-      const response = await fetchWithAuth('http://localhost:8000/empresas', {
+      // CORREÇÃO: Usando variável de ambiente
+      const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/empresas`, {
         method: 'POST',
         body: JSON.stringify(formData),
       });
       if (!response.ok) throw new Error((await response.json()).detail || 'Falha ao cadastrar empresa.');
+      
+      toast.success('Empresa cadastrada com sucesso!');
       setIsModalOpen(false);
       setFormData({ nome: '', url_zabbix: '', token_zabbix: '' });
-      fetchEmpresas();
+      fetchEmpresas(); // Atualiza a lista após o cadastro
     } catch (err: any) {
       setFormError(err.message);
+      toast.error(err.message);
     }
   }
 
-  // --- NOVA FUNÇÃO: Lógica de Seleção ---
-  async function handleSelectEmpresa(empresaId: number) {
-    try {
-      setError(`Selecionando empresa ID: ${empresaId}...`);
-      const response = await fetchWithAuth(`http://localhost:8000/empresas/${empresaId}`);
-      if (!response.ok) {
-        throw new Error('Não foi possível obter os detalhes da empresa.');
-      }
-      const empresaDetails = await response.json();
-
-      // Salva os detalhes no sessionStorage para uso em outras páginas
-      sessionStorage.setItem('empresaAtiva', JSON.stringify(empresaDetails));
-
-      // Redireciona para o dashboard (vamos criar essa página em breve)
-      router.push('/dashboard'); 
-
-    } catch (err: any) {
-      setError(err.message);
+  async function handleDeleteEmpresa(empresaId: number) {
+    if (window.confirm('Tem certeza que deseja excluir esta empresa? A ação não pode ser desfeita.')) {
+        try {
+            // CORREÇÃO: Usando variável de ambiente
+            const response = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/empresas/${empresaId}`, {
+                method: 'DELETE',
+            });
+            if (!response.ok) {
+                throw new Error((await response.json()).detail || 'Falha ao excluir empresa.');
+            }
+            toast.success('Empresa excluída com sucesso!');
+            setEmpresas(empresas.filter(e => e.id !== empresaId));
+        } catch (err: any) {
+            toast.error(err.message);
+        }
     }
   }
-  
+
   // --- Hooks de Efeito ---
   useEffect(() => {
     if (status === 'authenticated') {
@@ -100,7 +104,7 @@ export default function EmpresasPage() {
     } else if (status === 'unauthenticated') {
       router.push('/');
     }
-  }, [status]);
+  }, [status, router]);
 
   if (status === 'loading') {
     return (
@@ -112,7 +116,7 @@ export default function EmpresasPage() {
 
   // --- Renderização do Componente ---
   return (
-    <main className="flex min-h-screen flex-col items-center p-8">
+    <main className="flex min-h-screen flex-col items-center p-8 text-white">
       <div className="w-full max-w-4xl">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-cyan-400">Gerenciar Empresas</h1>
@@ -130,12 +134,11 @@ export default function EmpresasPage() {
                 empresas.map((empresa) => (
                   <li key={empresa.id} className="p-4 bg-gray-700 rounded-md flex justify-between items-center">
                     <span className="font-semibold text-lg">{empresa.nome}</span>
-                    {/* Botão agora chama a nova função */}
                     <button 
-                      onClick={() => handleSelectEmpresa(empresa.id)}
-                      className="px-3 py-1.5 text-sm font-bold text-white bg-cyan-500 rounded-md hover:bg-cyan-600"
+                      onClick={() => handleDeleteEmpresa(empresa.id)}
+                      className="px-3 py-1.5 text-sm font-bold text-white bg-red-600 rounded-md hover:bg-red-700"
                     >
-                      Selecionar
+                      Excluir
                     </button>
                   </li>
                 ))

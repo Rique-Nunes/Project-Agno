@@ -147,4 +147,3 @@ export default function HostAIChat({ hostId, empresaId, hostName }: HostAIChatPr
     </div>
   );
 }
-
