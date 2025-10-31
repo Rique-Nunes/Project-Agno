@@ -34,6 +34,7 @@ origins = [
     "http://127.0.0.1:9010",
     # Quando for para produção, adicione a URL do seu frontend aqui
     # "https://seu-frontend-em-producao.com" 
+    #"https://ipnet-msp-infra-lab.web.app"
 ]
 
 # Adiciona o middleware de CORS para permitir a comunicação entre domínios
